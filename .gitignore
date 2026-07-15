@@ -1,0 +1,4 @@
+output/
+.tools/
+site-qrcode.png
+__pycache__/

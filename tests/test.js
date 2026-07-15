@@ -1,0 +1,23 @@
+import { calculateNutrition, calculateBmr, calibrateTdee } from '../js/calculator.js';
+import { saveData, loadData } from '../js/storage.js';
+const out=document.querySelector('#output');let passed=0,failed=0,lines=[];
+function test(name,fn){try{fn();passed++;lines.push(`✅ ${name}`)}catch(e){failed++;lines.push(`❌ ${name}: ${e.message}`)}}
+const eq=(a,b,t=.01)=>{if(Math.abs(a-b)>t)throw Error(`${a} != ${b}`)};const ok=(x,m='断言失败')=>{if(!x)throw Error(m)};
+const base={age:20,sex:'male',height:170,weight:82,activity:'moderate',goal:'lose',goalRate:'standard',bodyFat:'',targetWeight:'',strength:3,cardio:0,duration:45,steps:7000};
+test('20岁男性、中度活动、减脂',()=>{const r=calculateNutrition(base);ok(r.ok);eq(r.bmr,1787.5);eq(r.target,1787.5*1.5*.85)});
+test('20岁女性、轻度活动、维持',()=>{const r=calculateNutrition({...base,sex:'female',height:160,weight:55,activity:'light',goal:'maintain',strength:0});ok(r.ok);eq(r.bmr,1289);eq(r.target,1740.15)});
+test('70岁男性蛋白质不低于1.2g/kg',()=>{const r=calculateNutrition({...base,age:70,height:165,weight:65,activity:'light',goal:'maintain',strength:0});ok(r.macros.protein.grams>=65*1.2);ok(r.warnings.some(x=>x.includes('老年人')))});
+test('体脂率切换Katch公式',()=>{const a=calculateBmr(base),b=calculateBmr({...base,bodyFat:20});ok(a.formula.includes('Mifflin'));ok(b.formula.includes('Katch'));eq(b.lbm,65.6)});
+test('高BMI限制蛋白质参考体重',()=>{const r=calculateNutrition({...base,weight:160,height:165,targetWeight:''});ok(r.referenceWeight.label.includes('受限'));ok(r.referenceWeight.value<160)});
+test('极低目标热量不产生负碳水',()=>{const r=calculateNutrition({...base,age:100,height:120,weight:300,bodyFat:60,activity:'sedentary',goal:'lose',goalRate:'fast'});ok(r.macros.carbs.grams>=0);if(r.conflict)ok(r.warnings.some(x=>x.includes('目标热量过低')))});
+test('身高为空被拒绝',()=>ok(!calculateNutrition({...base,height:''}).ok));
+test('体重为0被拒绝',()=>ok(!calculateNutrition({...base,weight:0}).ok));
+test('年龄超范围被拒绝',()=>ok(!calculateNutrition({...base,age:101}).ok));
+test('体脂率超范围被拒绝',()=>ok(!calculateNutrition({...base,bodyFat:90}).ok));
+test('localStorage写入失败被安全处理',()=>{const bad={setItem(){throw Error('denied')},getItem(){throw Error('denied')}};ok(saveData({x:1},bad)===false);ok(loadData(bad)===null)});
+test('动态校准：减重提高实测消耗',()=>{const r=calibrateTdee({originalTdee:2000,averageCalories:1800,startWeight:70,endWeight:69.8,days:14});ok(r.ok);ok(r.measured>1800)});
+test('动态校准：增重降低实测消耗',()=>{const r=calibrateTdee({originalTdee:2000,averageCalories:2200,startWeight:70,endWeight:70.2,days:14});ok(r.ok);ok(r.measured<2200)});
+test('不足7天不允许校准',()=>ok(!calibrateTdee({originalTdee:2000,averageCalories:1800,startWeight:70,endWeight:69.8,days:6}).ok));
+test('差异超过25%不采用',()=>{const r=calibrateTdee({originalTdee:2000,averageCalories:1000,startWeight:70,endWeight:65,days:7});ok(!r.ok&&r.abnormal)});
+test('宏量热量总和等于目标热量',()=>{const r=calculateNutrition(base),sum=Object.values(r.macros).reduce((s,m)=>s+m.calories,0);eq(sum,r.target,.01)});
+out.textContent=lines.join('\n')+`\n\n结果：${passed} 通过，${failed} 失败`;document.documentElement.dataset.failed=String(failed);document.title=failed?`FAIL ${failed}`:`PASS ${passed}`;
