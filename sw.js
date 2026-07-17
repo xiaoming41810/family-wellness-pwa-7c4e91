@@ -1,4 +1,4 @@
-const VERSION='family-wellness-pwa-7c4e91-ios-v2.0.0';
+const VERSION='family-wellness-pwa-7c4e91-ios-v2.0.1';
 const CACHE=`${VERSION}-app`;
 const CACHE_PREFIX='family-wellness-pwa-7c4e91-';
 const CORE_ASSETS=['./','./index.html','./styles.css','./manifest.webmanifest','./js/config.js','./js/calculator.js','./js/storage.js','./js/app.js','./icons/icon-192.png','./icons/icon-512.png'];
