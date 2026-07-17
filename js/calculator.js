@@ -40,7 +40,7 @@ function proteinRule(input) {
 export function calculateNutrition(input) {
   const errors=validateInput(input); if(errors.length) return { ok:false,errors };
   const bmr=calculateBmr(input), factor=CONFIG.activity[input.activity].factor, tdee=bmr.value*factor;
-  const rates=CONFIG.goalRates[input.goal], rate=rates[input.goalRate]??rates.standard, target=tdee*(1+rate);
+  const rates=CONFIG.goalRates[input.goal], rate=Object.prototype.hasOwnProperty.call(rates,input.goalRate)?rates[input.goalRate]:rates.standard, target=tdee*(1+rate);
   const ref=referenceWeight(input,bmr.lbm), rule=proteinRule(input); if(n(input.age)>=65) rule.def=Math.max(rule.def,1.2);
   const protein=ref.value*rule.def, proteinCalories=protein*4;
   const fatByWeight=ref.value*CONFIG.fat.gramsPerKg;

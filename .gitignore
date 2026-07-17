@@ -1,4 +1,5 @@
 output/
 .tools/
+.playwright-cli/
 site-qrcode.png
 __pycache__/
